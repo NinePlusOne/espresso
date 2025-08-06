@@ -1,0 +1,29 @@
+name = "chat-app"
+main = "worker.js"
+compatibility_date = "2023-08-01"
+
+# KV Namespace for storing user data, group data, etc.
+kv_namespaces = [
+  { binding = "CHAT_KV", id = "your-kv-namespace-id" }
+]
+
+# Durable Object for DM conversations
+[durable_objects]
+bindings = [
+  { name = "DM_ROOM", class_name = "DMRoom" },
+  { name = "GROUP_ROOM", class_name = "GroupRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["DMRoom", "GroupRoom"]
+
+# Environment variables
+[vars]
+# You can add environment variables here if needed
+# EXAMPLE_VAR = "example-value"
+
+# Triggers
+[triggers]
+# You can add cron triggers here if needed
+# crons = ["* * * * *"]

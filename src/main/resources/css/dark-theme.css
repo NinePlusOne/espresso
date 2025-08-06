@@ -1,0 +1,238 @@
+/* Dark theme for the application */
+
+/* Root styles */
+.root {
+    -fx-font-family: "Segoe UI", "Roboto", sans-serif;
+    -fx-font-size: 14px;
+    -fx-background-color: #2b2d31;
+}
+
+/* Main chat screen styles */
+.chat-header {
+    -fx-background-color: #36393f;
+    -fx-border-color: #202225;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.chat-header-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.messages-scroll-pane {
+    -fx-background-color: #36393f;
+    -fx-background: #36393f;
+}
+
+.messages-scroll-pane > .viewport {
+    -fx-background-color: #36393f;
+}
+
+.messages-container {
+    -fx-background-color: #36393f;
+}
+
+.message-bubble-sent {
+    -fx-background-color: #007bff;
+    -fx-background-radius: 18px;
+    -fx-padding: 10px 15px;
+    -fx-text-fill: white;
+}
+
+.message-bubble-received {
+    -fx-background-color: #4f545c;
+    -fx-background-radius: 18px;
+    -fx-padding: 10px 15px;
+    -fx-text-fill: white;
+}
+
+.sender-name {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b9bbbe;
+}
+
+.time-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #b9bbbe;
+    -fx-padding: 0 5px;
+}
+
+.system-message {
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+    -fx-text-fill: #b9bbbe;
+    -fx-alignment: center;
+}
+
+.date-separator {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b9bbbe;
+    -fx-padding: 10px 0;
+    -fx-alignment: center;
+}
+
+.message-input-container {
+    -fx-background-color: #36393f;
+    -fx-border-color: #202225;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.message-input {
+    -fx-background-color: #40444b;
+    -fx-background-radius: 18px;
+    -fx-border-radius: 18px;
+    -fx-border-color: #202225;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: white;
+}
+
+.message-input:focused {
+    -fx-border-color: #007bff;
+}
+
+/* Dialog styles */
+.dialog-background {
+    -fx-background-color: #36393f;
+}
+
+.dialog-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* Menu bar styles */
+.menu-bar {
+    -fx-background-color: #202225;
+}
+
+.menu-bar .menu {
+    -fx-background-color: #202225;
+}
+
+.menu-bar .menu:hover {
+    -fx-background-color: #36393f;
+}
+
+.menu-bar .menu .label {
+    -fx-text-fill: white;
+}
+
+.menu-bar .menu-item {
+    -fx-background-color: #36393f;
+}
+
+.menu-bar .menu-item .label {
+    -fx-text-fill: white;
+}
+
+.menu-bar .menu-item:hover {
+    -fx-background-color: #4f545c;
+}
+
+/* List view styles */
+.list-view {
+    -fx-background-color: #36393f;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.list-view .list-cell {
+    -fx-background-color: #36393f;
+    -fx-text-fill: white;
+    -fx-padding: 10px;
+    -fx-border-color: #2b2d31;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: #4f545c;
+    -fx-text-fill: white;
+}
+
+.list-view .list-cell:hover {
+    -fx-background-color: #4f545c;
+}
+
+/* Tab pane styles */
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #2b2d31;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #2b2d31;
+    -fx-background-radius: 0;
+    -fx-border-width: 0 0 3px 0;
+    -fx-border-color: transparent;
+    -fx-padding: 5px 10px;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #36393f;
+    -fx-border-color: #007bff;
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: #dcddde;
+    -fx-font-weight: normal;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Text field styles */
+.text-field {
+    -fx-background-color: #40444b;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #202225;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: white;
+}
+
+.text-field:focused {
+    -fx-border-color: #007bff;
+}
+
+/* Text area styles */
+.text-area {
+    -fx-background-color: #40444b;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: #202225;
+    -fx-border-width: 1px;
+    -fx-padding: 8px;
+    -fx-text-fill: white;
+}
+
+.text-area:focused {
+    -fx-border-color: #007bff;
+}
+
+.text-area .content {
+    -fx-background-color: #40444b;
+}
+
+/* Emoji picker styles */
+.emoji-picker {
+    -fx-background-color: #36393f;
+}
+
+.emoji-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 24px;
+    -fx-padding: 5px;
+    -fx-cursor: hand;
+}
+
+.emoji-button:hover {
+    -fx-background-color: #4f545c;
+    -fx-background-radius: 8px;
+}
