@@ -40,25 +40,52 @@ Once the KV namespace is configured, deploy using:
 npx wrangler deploy
 ```
 
-## Current Deployment Issue
+**Important for CI/CD**: If you're using Cloudflare's CI system, make sure the deployment command is set to `npx wrangler deploy` (not `npx wrangler versions upload`) for the initial deployment with Durable Objects.
 
-The deployment is currently failing with:
+## Deployment Issues and Solutions
+
+### Issue 1: KV Namespace (RESOLVED ✅)
+~~The deployment was failing with: `KV namespace 'your-kv-namespace-id' is not valid`~~
+**Status**: Fixed - KV namespace is now properly configured with ID `649a3abcf5a54532a150a894451e28c5`
+
+### Issue 2: Durable Object Migration (NEEDS CI CONFIGURATION CHANGE)
+The deployment is failing with:
 ```
-KV namespace 'your-kv-namespace-id' is not valid. [code: 10042]
+Version upload failed. You attempted to upload a version of a Worker that includes a Durable Object migration, but migrations must be fully applied by running "wrangler deploy".
 ```
 
-This is because the `wrangler.toml` file contains a placeholder value instead of a real KV namespace ID.
+**Root Cause**: The CI system uses `wrangler versions upload` which doesn't support Durable Object migrations.
+
+**Solution Required**: The CI deployment command needs to be changed from `npx wrangler versions upload` to `npx wrangler deploy` for the initial deployment with Durable Objects.
+
+**Why migrations are needed**: Durable Objects require an initial migration to register the new classes, even for the first deployment.
 
 ## What's Working
 
-✅ Durable Objects are now properly exported and recognized
-✅ Worker name matches CI expectations ("project-espresso")
+✅ Durable Objects are properly exported and recognized
+✅ Worker name matches CI expectations ("project-espresso")  
+✅ KV namespace is properly configured
 ✅ Code syntax and structure are valid
+✅ Durable Object migrations are properly configured
 
-## Next Steps
+## What Needs to be Fixed
 
-1. Create a KV namespace (see steps above)
-2. Update the namespace ID in `wrangler.toml`
-3. Redeploy the application
+❌ CI deployment command needs to be changed from `wrangler versions upload` to `wrangler deploy`
 
-The application will be fully functional once the KV namespace is properly configured.
+## Future Migrations
+
+If you need to modify Durable Object classes in the future, you'll need to:
+
+1. Add a migration section to `wrangler.toml`
+2. Use `wrangler deploy` instead of `wrangler versions upload`
+3. Apply migrations before using version uploads
+
+Example migration:
+```toml
+[[migrations]]
+tag = "v2"
+new_classes = ["NewDurableObjectClass"]
+renamed_classes = [
+  { from = "OldClassName", to = "NewClassName" }
+]
+```
