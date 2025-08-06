@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -379,15 +380,13 @@ public class MessageHandler {
             return future;
         }
 
-        content = content.trim();
-        if (content.length() > 2000) {
-            content = content.substring(0, 2000);
-        }
+        final String finalContent = content.trim().length() > 2000 ? 
+            content.trim().substring(0, 2000) : content.trim();
 
         JsonObject json = Json.createObjectBuilder()
                 .add("action", "send_message")
                 .add("chatId", chatId)
-                .add("content", content)
+                .add("content", finalContent)
                 .add("timestamp", System.currentTimeMillis())
                 .add("messageType", "text")
                 .build();
@@ -588,7 +587,7 @@ public class MessageHandler {
                         try (JsonReader reader = Json.createReader(new java.io.StringReader(response.body()))) {
                             JsonValue jsonValue = reader.readValue();
                             if (jsonValue.getValueType() == JsonValue.ValueType.ARRAY) {
-                                jsonValue.asJsonArray().forEach(item -> {
+                                for (JsonValue item : jsonValue.asJsonArray()) {
                                     if (item.getValueType() == JsonValue.ValueType.OBJECT) {
                                         JsonObject userJson = item.asJsonObject();
                                         String userId = userJson.getString("userId");
@@ -597,7 +596,7 @@ public class MessageHandler {
                                         user.setOnline(userJson.getBoolean("online", false));
                                         users.add(user);
                                     }
-                                });
+                                }
                             }
                         } catch (Exception e) {
                             LOGGER.log(Level.SEVERE, "Failed to parse search users response", e);
@@ -609,7 +608,7 @@ public class MessageHandler {
                             errorListener.accept(errorMsg);
                         }
                         LOGGER.warning(errorMsg);
-                        return new ArrayList<>();
+                        return new ArrayList<User>();
                     }
                 }, executorService)
                 .exceptionally(ex -> {
@@ -618,7 +617,7 @@ public class MessageHandler {
                         errorListener.accept(errorMsg);
                     }
                     LOGGER.log(Level.SEVERE, errorMsg, ex);
-                    return new ArrayList<>();
+                    return new ArrayList<User>();
                 });
     }
 
@@ -649,7 +648,7 @@ public class MessageHandler {
                         try (JsonReader reader = Json.createReader(new java.io.StringReader(response.body()))) {
                             JsonValue jsonValue = reader.readValue();
                             if (jsonValue.getValueType() == JsonValue.ValueType.ARRAY) {
-                                jsonValue.asJsonArray().forEach(item -> {
+                                for (JsonValue item : jsonValue.asJsonArray()) {
                                     if (item.getValueType() == JsonValue.ValueType.OBJECT) {
                                         JsonObject groupJson = item.asJsonObject();
                                         Map<String, String> group = new HashMap<>();
@@ -659,7 +658,7 @@ public class MessageHandler {
                                         group.put("memberCount", String.valueOf(groupJson.getInt("memberCount", 0)));
                                         groups.add(group);
                                     }
-                                });
+                                }
                             }
                         } catch (Exception e) {
                             LOGGER.log(Level.SEVERE, "Failed to parse search groups response", e);
@@ -671,7 +670,7 @@ public class MessageHandler {
                             errorListener.accept(errorMsg);
                         }
                         LOGGER.warning(errorMsg);
-                        return new ArrayList<>();
+                        return new ArrayList<Map<String, String>>();
                     }
                 }, executorService)
                 .exceptionally(ex -> {
@@ -680,7 +679,7 @@ public class MessageHandler {
                         errorListener.accept(errorMsg);
                     }
                     LOGGER.log(Level.SEVERE, errorMsg, ex);
-                    return new ArrayList<>();
+                    return new ArrayList<Map<String, String>>();
                 });
     }
 

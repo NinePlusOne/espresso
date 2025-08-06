@@ -21,14 +21,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Controller for the group chat dialog.
  */
 public class GroupChatController implements Initializable {
-    private static final Logger LOGGER = Logger.getLogger(GroupChatController.class.getName());
     
     @FXML private Label titleLabel;
     @FXML private TextField searchField;
