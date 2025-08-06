@@ -17,7 +17,7 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["DMRoom", "GroupRoom"]
+new_sqlite_classes = ["DMRoom", "GroupRoom"]
 
 # Environment variables
 [vars]
