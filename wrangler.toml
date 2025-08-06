@@ -3,6 +3,7 @@ main = "worker.js"
 compatibility_date = "2023-08-01"
 
 # KV Namespace for storing user data, group data, etc.
+# TODO: Replace "your-kv-namespace-id" with actual KV namespace ID from Cloudflare dashboard
 kv_namespaces = [
   { binding = "CHAT_KV", id = "your-kv-namespace-id" }
 ]
