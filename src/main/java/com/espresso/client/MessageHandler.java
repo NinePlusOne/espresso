@@ -35,8 +35,8 @@ import javax.json.JsonValue;
  */
 public class MessageHandler {
     private static final Logger LOGGER = Logger.getLogger(MessageHandler.class.getName());
-    private static final String API_BASE_URL = "https://chat-app.workers.dev";
-    private static final String WS_BASE_URL = "wss://chat-app.workers.dev";
+    private static final String API_BASE_URL = "http://localhost:8787";
+    private static final String WS_BASE_URL = "ws://localhost:8787";
     
     private final HttpClient httpClient;
     private final ExecutorService executorService;
