@@ -26,14 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Controller for the search dialog.
  */
 public class SearchController implements Initializable {
-    private static final Logger LOGGER = Logger.getLogger(SearchController.class.getName());
     
     @FXML private TextField searchField;
     @FXML private Button searchButton;

@@ -21,14 +21,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Controller for the new DM dialog.
  */
 public class NewDMController implements Initializable {
-    private static final Logger LOGGER = Logger.getLogger(NewDMController.class.getName());
     
     @FXML private TextField searchField;
     @FXML private Button searchButton;
