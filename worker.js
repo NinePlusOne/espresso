@@ -6,6 +6,9 @@
 import { DMRoom } from './dm-room.js';
 import { GroupRoom } from './group-room.js';
 
+// Export Durable Object classes for Cloudflare Workers runtime
+export { DMRoom, GroupRoom };
+
 // Constants
 const JWT_SECRET = 'your-jwt-secret-key-change-this-in-production';
 const JWT_EXPIRATION = 60 * 60 * 24; // 24 hours in seconds
