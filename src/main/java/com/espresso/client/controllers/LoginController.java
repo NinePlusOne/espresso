@@ -76,6 +76,12 @@ public class LoginController implements Initializable {
      */
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+        // Set the title now that we have the stage
+        if (isLoginMode) {
+            showLoginPane();
+        } else {
+            showRegisterPane();
+        }
     }
     
     /**
@@ -100,7 +106,9 @@ public class LoginController implements Initializable {
         loginPane.setVisible(true);
         registerPane.setVisible(false);
         toggleModeButton.setText("Create Account");
-        primaryStage.setTitle("Espresso Chat - Login");
+        if (primaryStage != null) {
+            primaryStage.setTitle("Espresso Chat - Login");
+        }
     }
     
     /**
@@ -110,7 +118,9 @@ public class LoginController implements Initializable {
         loginPane.setVisible(false);
         registerPane.setVisible(true);
         toggleModeButton.setText("Back to Login");
-        primaryStage.setTitle("Espresso Chat - Register");
+        if (primaryStage != null) {
+            primaryStage.setTitle("Espresso Chat - Register");
+        }
     }
     
     /**
