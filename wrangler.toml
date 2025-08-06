@@ -1,8 +1,9 @@
-name = "chat-app"
+name = "project-espresso"
 main = "worker.js"
 compatibility_date = "2023-08-01"
 
 # KV Namespace for storing user data, group data, etc.
+# TODO: Replace "your-kv-namespace-id" with actual KV namespace ID from Cloudflare dashboard
 kv_namespaces = [
   { binding = "CHAT_KV", id = "649a3abcf5a54532a150a894451e28c5" }
 ]
@@ -16,7 +17,7 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["DMRoom", "GroupRoom"]
+new_sqlite_classes = ["DMRoom", "GroupRoom"]
 
 # Environment variables
 [vars]
