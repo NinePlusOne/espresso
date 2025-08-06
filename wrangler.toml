@@ -4,7 +4,7 @@ compatibility_date = "2023-08-01"
 
 # KV Namespace for storing user data, group data, etc.
 kv_namespaces = [
-  { binding = "CHAT_KV", id = "your-kv-namespace-id" }
+  { binding = "CHAT_KV", id = "649a3abcf5a54532a150a894451e28c5" }
 ]
 
 # Durable Object for DM conversations
