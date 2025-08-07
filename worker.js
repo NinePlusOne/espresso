@@ -160,28 +160,35 @@ export default {
 
     // Route to the appropriate Durable Object
     try {
-      // According to Cloudflare docs, we need to pass data as part of the init object
-      // in the fetch options, not as a separate parameter
-      const init = {
-        headers: {
-          'Authorization': request.headers.get('Authorization'),
-          'X-User-ID': payload.userId
-        },
-        // Pass the userId in the body of the request
-        body: JSON.stringify({ userId: payload.userId }),
-        method: 'POST'
-      };
+      // Create a new request with the userId as a parameter
+      const newUrl = new URL(request.url);
+      newUrl.searchParams.append('userId', payload.userId);
+      
+      // Create a new request with the same headers but with the userId added
+      const newHeaders = new Headers(request.headers);
+      newHeaders.set('X-User-ID', payload.userId);
+      
+      // Create a new request object
+      const newRequest = new Request(newUrl, {
+        method: request.method,
+        headers: newHeaders,
+        body: request.body,
+        redirect: request.redirect,
+        integrity: request.integrity,
+        keepalive: request.keepalive,
+        signal: request.signal,
+      });
       
       if (chatId.startsWith('dm_')) {
         // Direct message chat
         const dmId = env.DM_ROOM.idFromName(chatId);
         const dmRoom = env.DM_ROOM.get(dmId);
-        return dmRoom.fetch(request.url, init);
+        return dmRoom.fetch(newRequest);
       } else if (chatId.startsWith('group_')) {
         // Group chat
         const groupId = env.GROUP_ROOM.idFromName(chatId);
         const groupRoom = env.GROUP_ROOM.get(groupId);
-        return groupRoom.fetch(request.url, init);
+        return groupRoom.fetch(newRequest);
       } else {
         return new Response('Invalid chatId format', { status: 400 });
       }

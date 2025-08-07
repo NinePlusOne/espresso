@@ -40,21 +40,42 @@ export class GroupRoom {
    * @returns {Response} The WebSocket response
    */
   async handleWebSocketUpgrade(request) {
-    // Extract user ID from request headers
-    const userId = request.headers.get('X-User-ID');
+    // Try multiple methods to extract the userId
+    
+    // 1. Try from URL parameters
+    const url = new URL(request.url);
+    let userId = url.searchParams.get('userId');
+    
+    // 2. Try from request headers if not found in URL
     if (!userId) {
-      // Try to get userId from request body as fallback
+      userId = request.headers.get('X-User-ID');
+    }
+    
+    // 3. Try from request body as a last resort
+    if (!userId) {
       try {
-        const data = await request.json();
-        if (data && data.userId) {
-          return this.setupWebSocket(request, data.userId);
+        // Clone the request to avoid consuming the body
+        const clonedRequest = request.clone();
+        const contentType = request.headers.get('Content-Type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          const data = await clonedRequest.json();
+          if (data && data.userId) {
+            userId = data.userId;
+          }
         }
       } catch (error) {
         console.error('Error parsing request body:', error);
       }
-      return new Response('Missing userId in request headers or body', { status: 400 });
     }
     
+    // If userId is still not found, return an error
+    if (!userId) {
+      console.error('Missing userId in request. URL:', request.url, 'Headers:', [...request.headers.entries()]);
+      return new Response('Missing userId in request parameters, headers, or body', { status: 400 });
+    }
+    
+    console.log(`Found userId ${userId} for WebSocket connection in group ${this.state.id.name}`);
     return this.setupWebSocket(request, userId);
   }
   
