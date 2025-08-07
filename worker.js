@@ -123,6 +123,9 @@ export default {
    * @param {Object} env - Environment variables and bindings
    * @returns {Response} The WebSocket response
    */
+  // Store active WebSocket connections
+  activeConnections: new Map(),
+
   async handleWebSocketUpgrade(request, env) {
     // Check for WebSocket upgrade
     const upgradeHeader = request.headers.get('Upgrade');
@@ -155,36 +158,153 @@ export default {
       return new Response('Missing chatId parameter', { status: 400 });
     }
 
-    // Route to the appropriate Durable Object
+    // For free tier, we'll use a simpler approach without Durable Objects
+    // Create a simple WebSocket pair
+    const pair = new WebSocketPair();
+    const [client, server] = Object.values(pair);
+
+    // Accept the WebSocket connection
+    server.accept();
+    
+    // Store the connection
+    if (!this.activeConnections.has(chatId)) {
+      this.activeConnections.set(chatId, new Map());
+    }
+    const connectionId = crypto.randomUUID();
+    this.activeConnections.get(chatId).set(connectionId, {
+      userId: payload.userId,
+      webSocket: server
+    });
+    
+    // Set up a message handler
+    server.addEventListener('message', async event => {
+      try {
+        // Parse the message
+        const message = JSON.parse(event.data);
+        
+        // Handle the message based on its action
+        if (message.action === 'send_message') {
+          // Get user details
+          const userJson = await env.CHAT_KV.get(`user:${payload.userId}`);
+          if (!userJson) {
+            server.send(JSON.stringify({
+              type: 'error',
+              content: 'User not found',
+              timestamp: Date.now(),
+              chatId: chatId
+            }));
+            return;
+          }
+
+          const user = JSON.parse(userJson);
+
+          // Create a response message
+          const responseMessage = {
+            type: 'message',
+            messageId: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            senderId: payload.userId,
+            senderName: user.displayName,
+            content: message.content,
+            timestamp: Date.now(),
+            chatId: chatId
+          };
+
+          // Broadcast the message to all connected clients in this chat
+          this.broadcastMessage(chatId, responseMessage);
+
+          // Store the message in KV (with a TTL to avoid exceeding storage limits)
+          await env.CHAT_KV.put(
+            `chat:${chatId}:msg:${responseMessage.messageId}`, 
+            JSON.stringify(responseMessage),
+            { expirationTtl: 60 * 60 * 24 * 7 } // 7 days
+          );
+        }
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error);
+        server.send(JSON.stringify({
+          type: 'error',
+          content: 'Failed to process message',
+          timestamp: Date.now(),
+          chatId: chatId
+        }));
+      }
+    });
+
+    // Handle close event
+    server.addEventListener('close', () => {
+      console.log(`WebSocket closed for user ${payload.userId} in chat ${chatId}`);
+      
+      // Remove the connection
+      if (this.activeConnections.has(chatId)) {
+        this.activeConnections.get(chatId).delete(connectionId);
+        
+        // If no more connections for this chat, remove the chat entry
+        if (this.activeConnections.get(chatId).size === 0) {
+          this.activeConnections.delete(chatId);
+        }
+      }
+      
+      // Broadcast user left message
+      const userLeftMessage = {
+        type: 'user_left',
+        senderId: payload.userId,
+        content: `User has left the chat`,
+        timestamp: Date.now(),
+        chatId: chatId
+      };
+      
+      this.broadcastMessage(chatId, userLeftMessage);
+    });
+
+    // Handle error event
+    server.addEventListener('error', (error) => {
+      console.error(`WebSocket error for user ${payload.userId} in chat ${chatId}:`, error);
+    });
+
+    // Send a welcome message
+    server.send(JSON.stringify({
+      type: 'system',
+      content: `Connected to chat ${chatId}`,
+      timestamp: Date.now(),
+      chatId: chatId
+    }));
+
+    // Send message history
     try {
-      // Create a new request with the userId in the headers
-      const newRequest = new Request(request.url, {
-        method: request.method,
-        headers: new Headers(request.headers),
-        body: request.body,
-        redirect: request.redirect,
-      });
+      // Get recent messages from KV storage
+      const messageList = await env.CHAT_KV.list({ prefix: `chat:${chatId}:msg:` });
+      const messages = [];
       
-      // Add userId to the headers so the Durable Object can access it
-      newRequest.headers.set('X-User-ID', payload.userId);
+      // Fetch each message
+      for (const key of messageList.keys) {
+        const messageJson = await env.CHAT_KV.get(key.name);
+        if (messageJson) {
+          messages.push(JSON.parse(messageJson));
+        }
+      }
       
-      if (chatId.startsWith('dm_')) {
-        // Direct message chat
-        const dmId = env.DM_ROOM.idFromName(chatId);
-        const dmRoom = env.DM_ROOM.get(dmId);
-        return dmRoom.fetch(newRequest);
-      } else if (chatId.startsWith('group_')) {
-        // Group chat
-        const groupId = env.GROUP_ROOM.idFromName(chatId);
-        const groupRoom = env.GROUP_ROOM.get(groupId);
-        return groupRoom.fetch(newRequest);
-      } else {
-        return new Response('Invalid chatId format', { status: 400 });
+      // Sort messages by timestamp
+      messages.sort((a, b) => a.timestamp - b.timestamp);
+      
+      // Send each message to the client
+      for (const message of messages) {
+        server.send(JSON.stringify(message));
       }
     } catch (error) {
-      console.error('Error routing WebSocket request:', error);
-      return new Response('Internal server error', { status: 500 });
+      console.error('Error sending message history:', error);
+      server.send(JSON.stringify({
+        type: 'error',
+        content: 'Failed to load message history',
+        timestamp: Date.now(),
+        chatId: chatId
+      }));
     }
+
+    // Return the client WebSocket
+    return new Response(null, {
+      status: 101,
+      webSocket: client
+    });
   },
 
   /**
@@ -671,6 +791,36 @@ export default {
    * @param {string} storedHash - The stored hash
    * @returns {boolean} True if the password is valid, false otherwise
    */
+  
+  /**
+   * Broadcasts a message to all connected clients in a chat.
+   * @param {string} chatId - The chat ID
+   * @param {Object} message - The message to broadcast
+   */
+  broadcastMessage(chatId, message) {
+    if (!this.activeConnections.has(chatId)) {
+      return;
+    }
+    
+    const messageStr = JSON.stringify(message);
+    const connections = this.activeConnections.get(chatId);
+    
+    for (const [connectionId, connection] of connections.entries()) {
+      try {
+        connection.webSocket.send(messageStr);
+      } catch (error) {
+        console.error(`Error broadcasting message to connection ${connectionId}:`, error);
+        // Remove the connection if it's broken
+        connections.delete(connectionId);
+      }
+    }
+    
+    // If no more connections for this chat, remove the chat entry
+    if (connections.size === 0) {
+      this.activeConnections.delete(chatId);
+    }
+  },
+  
   async verifyPassword(password, storedHash) {
     // Split the stored hash into hash and salt
     const [hash, salt] = storedHash.split('.');
