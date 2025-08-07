@@ -19,14 +19,19 @@ export class GroupRoom {
    * @param {Object} data - Additional data passed to the Durable Object
    * @returns {Response} The response
    */
-  async fetch(request, data) {
-    // Handle WebSocket upgrade
-    if (request.headers.get('Upgrade') === 'websocket') {
-      return this.handleWebSocketUpgrade(request, data);
-    }
+  async fetch(request, data = {}) {
+    try {
+      // Handle WebSocket upgrade
+      if (request.headers.get('Upgrade') === 'websocket') {
+        return this.handleWebSocketUpgrade(request, data);
+      }
 
-    // Handle HTTP requests
-    return new Response('This endpoint only supports WebSocket connections', { status: 400 });
+      // Handle HTTP requests
+      return new Response('This endpoint only supports WebSocket connections', { status: 400 });
+    } catch (error) {
+      console.error('Error in GroupRoom fetch:', error);
+      return new Response('Internal server error', { status: 500 });
+    }
   }
 
   /**
@@ -36,10 +41,10 @@ export class GroupRoom {
    * @returns {Response} The WebSocket response
    */
   async handleWebSocketUpgrade(request, data) {
-    // Extract user ID from data
-    const { userId } = data;
+    // Extract user ID from request headers
+    const userId = request.headers.get('X-User-ID');
     if (!userId) {
-      return new Response('Missing userId', { status: 400 });
+      return new Response('Missing userId in request headers', { status: 400 });
     }
 
     // Get the group ID from the Durable Object ID

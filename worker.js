@@ -157,20 +157,27 @@ export default {
 
     // Route to the appropriate Durable Object
     try {
+      // Create a new request with the userId in the headers
+      const newRequest = new Request(request.url, {
+        method: request.method,
+        headers: new Headers(request.headers),
+        body: request.body,
+        redirect: request.redirect,
+      });
+      
+      // Add userId to the headers so the Durable Object can access it
+      newRequest.headers.set('X-User-ID', payload.userId);
+      
       if (chatId.startsWith('dm_')) {
         // Direct message chat
         const dmId = env.DM_ROOM.idFromName(chatId);
         const dmRoom = env.DM_ROOM.get(dmId);
-        // Explicitly create the data object with userId
-        const data = { userId: payload.userId };
-        return dmRoom.fetch(request.clone(), data);
+        return dmRoom.fetch(newRequest);
       } else if (chatId.startsWith('group_')) {
         // Group chat
         const groupId = env.GROUP_ROOM.idFromName(chatId);
         const groupRoom = env.GROUP_ROOM.get(groupId);
-        // Explicitly create the data object with userId
-        const data = { userId: payload.userId };
-        return groupRoom.fetch(request.clone(), data);
+        return groupRoom.fetch(newRequest);
       } else {
         return new Response('Invalid chatId format', { status: 400 });
       }
