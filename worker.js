@@ -142,6 +142,12 @@ export default {
       return new Response('Invalid token', { status: 401 });
     }
 
+    // Ensure payload contains userId
+    if (!payload.userId) {
+      console.error('JWT payload missing userId:', payload);
+      return new Response('Invalid token: missing userId', { status: 401 });
+    }
+
     // Get chat ID from query parameters
     const url = new URL(request.url);
     const chatId = url.searchParams.get('chatId');
@@ -150,18 +156,27 @@ export default {
     }
 
     // Route to the appropriate Durable Object
-    if (chatId.startsWith('dm_')) {
-      // Direct message chat
-      const dmId = env.DM_ROOM.idFromName(chatId);
-      const dmRoom = env.DM_ROOM.get(dmId);
-      return dmRoom.fetch(request.clone(), { userId: payload.userId });
-    } else if (chatId.startsWith('group_')) {
-      // Group chat
-      const groupId = env.GROUP_ROOM.idFromName(chatId);
-      const groupRoom = env.GROUP_ROOM.get(groupId);
-      return groupRoom.fetch(request.clone(), { userId: payload.userId });
-    } else {
-      return new Response('Invalid chatId format', { status: 400 });
+    try {
+      if (chatId.startsWith('dm_')) {
+        // Direct message chat
+        const dmId = env.DM_ROOM.idFromName(chatId);
+        const dmRoom = env.DM_ROOM.get(dmId);
+        // Explicitly create the data object with userId
+        const data = { userId: payload.userId };
+        return dmRoom.fetch(request.clone(), data);
+      } else if (chatId.startsWith('group_')) {
+        // Group chat
+        const groupId = env.GROUP_ROOM.idFromName(chatId);
+        const groupRoom = env.GROUP_ROOM.get(groupId);
+        // Explicitly create the data object with userId
+        const data = { userId: payload.userId };
+        return groupRoom.fetch(request.clone(), data);
+      } else {
+        return new Response('Invalid chatId format', { status: 400 });
+      }
+    } catch (error) {
+      console.error('Error routing WebSocket request:', error);
+      return new Response('Internal server error', { status: 500 });
     }
   },
 
@@ -522,6 +537,12 @@ export default {
       typ: 'JWT',
     };
 
+    // Ensure payload contains userId
+    if (!payload.userId) {
+      console.error('Missing userId in JWT payload:', payload);
+      throw new Error('Missing userId in JWT payload');
+    }
+
     // Create JWT payload
     const jwtPayload = {
       ...payload,
@@ -562,6 +583,7 @@ export default {
       // Split token into parts
       const parts = token.split('.');
       if (parts.length !== 3) {
+        console.error('Invalid JWT format: token does not have three parts');
         return null;
       }
 
@@ -593,6 +615,7 @@ export default {
       );
 
       if (!valid) {
+        console.error('JWT signature verification failed');
         return null;
       }
 
@@ -601,6 +624,13 @@ export default {
 
       // Check expiration
       if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.error('JWT token expired');
+        return null;
+      }
+
+      // Verify payload contains userId
+      if (!payload.userId) {
+        console.error('JWT payload missing userId:', payload);
         return null;
       }
 
