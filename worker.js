@@ -123,6 +123,9 @@ export default {
    * @param {Object} env - Environment variables and bindings
    * @returns {Response} The WebSocket response
    */
+  // Store active WebSocket connections
+  activeConnections: new Map(),
+
   async handleWebSocketUpgrade(request, env) {
     // Check for WebSocket upgrade
     const upgradeHeader = request.headers.get('Upgrade');
@@ -157,20 +160,28 @@ export default {
 
     // Route to the appropriate Durable Object
     try {
+      // According to Cloudflare docs, we need to pass data as part of the init object
+      // in the fetch options, not as a separate parameter
+      const init = {
+        headers: {
+          'Authorization': request.headers.get('Authorization'),
+          'X-User-ID': payload.userId
+        },
+        // Pass the userId in the body of the request
+        body: JSON.stringify({ userId: payload.userId }),
+        method: 'POST'
+      };
+      
       if (chatId.startsWith('dm_')) {
         // Direct message chat
         const dmId = env.DM_ROOM.idFromName(chatId);
         const dmRoom = env.DM_ROOM.get(dmId);
-        // Explicitly create the data object with userId
-        const data = { userId: payload.userId };
-        return dmRoom.fetch(request.clone(), data);
+        return dmRoom.fetch(request.url, init);
       } else if (chatId.startsWith('group_')) {
         // Group chat
         const groupId = env.GROUP_ROOM.idFromName(chatId);
         const groupRoom = env.GROUP_ROOM.get(groupId);
-        // Explicitly create the data object with userId
-        const data = { userId: payload.userId };
-        return groupRoom.fetch(request.clone(), data);
+        return groupRoom.fetch(request.url, init);
       } else {
         return new Response('Invalid chatId format', { status: 400 });
       }
@@ -664,6 +675,36 @@ export default {
    * @param {string} storedHash - The stored hash
    * @returns {boolean} True if the password is valid, false otherwise
    */
+  
+  /**
+   * Broadcasts a message to all connected clients in a chat.
+   * @param {string} chatId - The chat ID
+   * @param {Object} message - The message to broadcast
+   */
+  broadcastMessage(chatId, message) {
+    if (!this.activeConnections.has(chatId)) {
+      return;
+    }
+    
+    const messageStr = JSON.stringify(message);
+    const connections = this.activeConnections.get(chatId);
+    
+    for (const [connectionId, connection] of connections.entries()) {
+      try {
+        connection.webSocket.send(messageStr);
+      } catch (error) {
+        console.error(`Error broadcasting message to connection ${connectionId}:`, error);
+        // Remove the connection if it's broken
+        connections.delete(connectionId);
+      }
+    }
+    
+    // If no more connections for this chat, remove the chat entry
+    if (connections.size === 0) {
+      this.activeConnections.delete(chatId);
+    }
+  },
+  
   async verifyPassword(password, storedHash) {
     // Split the stored hash into hash and salt
     const [hash, salt] = storedHash.split('.');

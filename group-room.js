@@ -16,31 +16,55 @@ export class GroupRoom {
   /**
    * Handles incoming requests to the Durable Object.
    * @param {Request} request - The incoming request
-   * @param {Object} data - Additional data passed to the Durable Object
+   * @param {Object} env - Environment variables and bindings
    * @returns {Response} The response
    */
-  async fetch(request, data) {
-    // Handle WebSocket upgrade
-    if (request.headers.get('Upgrade') === 'websocket') {
-      return this.handleWebSocketUpgrade(request, data);
-    }
+  async fetch(request, env) {
+    try {
+      // Handle WebSocket upgrade
+      if (request.headers.get('Upgrade') === 'websocket') {
+        return this.handleWebSocketUpgrade(request);
+      }
 
-    // Handle HTTP requests
-    return new Response('This endpoint only supports WebSocket connections', { status: 400 });
+      // Handle HTTP requests
+      return new Response('This endpoint only supports WebSocket connections', { status: 400 });
+    } catch (error) {
+      console.error('Error in GroupRoom fetch:', error);
+      return new Response('Internal server error', { status: 500 });
+    }
   }
 
   /**
    * Handles WebSocket upgrade requests.
    * @param {Request} request - The incoming request
-   * @param {Object} data - Additional data passed to the Durable Object
    * @returns {Response} The WebSocket response
    */
-  async handleWebSocketUpgrade(request, data) {
-    // Extract user ID from data
-    const { userId } = data;
+  async handleWebSocketUpgrade(request) {
+    // Extract user ID from request headers
+    const userId = request.headers.get('X-User-ID');
     if (!userId) {
-      return new Response('Missing userId', { status: 400 });
+      // Try to get userId from request body as fallback
+      try {
+        const data = await request.json();
+        if (data && data.userId) {
+          return this.setupWebSocket(request, data.userId);
+        }
+      } catch (error) {
+        console.error('Error parsing request body:', error);
+      }
+      return new Response('Missing userId in request headers or body', { status: 400 });
     }
+    
+    return this.setupWebSocket(request, userId);
+  }
+  
+  /**
+   * Sets up the WebSocket connection.
+   * @param {Request} request - The incoming request
+   * @param {string} userId - The user ID
+   * @returns {Response} The WebSocket response
+   */
+  async setupWebSocket(request, userId) {
 
     // Get the group ID from the Durable Object ID
     const groupId = this.state.id.name.replace('group_', '');
